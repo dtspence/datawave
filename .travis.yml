@@ -1,4 +1,4 @@
-dist: precise
+dist: trusty
 language: java
 jdk:
   - oraclejdk8
@@ -7,14 +7,21 @@ cache:
   directories:
   - $HOME/.m2
 
-install:
-  - pushd contrib/read-properties
-  - mvn -q install
-  - popd
-  - pushd contrib/assert-properties
-  - mvn -q install
-  - popd
+services:
+  - docker
 
-script:
-  - travis_wait mvn -q -Pdev,dist install -DskipTests
-  - mvn -Dsurefire.forkCount=4 -Pdev verify
+jobs: 
+  include:
+    install:
+      - pushd contrib/read-properties
+      - mvn -q install
+      - popd
+      - pushd contrib/assert-properties
+      - mvn -q install
+      - popd
+
+    script:
+      - travis_wait mvn -q -Pdev,dist install -DskipTests
+      - mvn -Dsurefire.forkCount=4 -Pdev verify
+      - contrib/datawave-quickstart/docker/docker-build.sh test-image --use-existing-binaries
+
