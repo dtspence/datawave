@@ -15,12 +15,12 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-public class CachingFieldConfigHelperTest {
+public class CachingLruFieldConfigHelperTest {
     @Test
     public void testCachingBehaviorWillCallBaseMethods() {
         String fieldName = "test";
         FieldConfigHelper mockHelper = mock(FieldConfigHelper.class);
-        FieldConfigHelper cachedHelper = new CachedFieldConfigHelper(mockHelper, 1);
+        FieldConfigHelper cachedHelper = new CachedLruFieldConfigHelper(mockHelper, 1);
 
         cachedHelper.isIndexOnlyField(fieldName);
         verify(mockHelper).isIndexOnlyField(eq(fieldName));
@@ -44,16 +44,16 @@ public class CachingFieldConfigHelperTest {
     @ParameterizedTest
     @ValueSource(ints = {-1, 0})
     public void testConstructorWithNonPositiveLimitWillThrow(int limit) {
-        assertThrows(IllegalArgumentException.class, () -> new CachedFieldConfigHelper(mock(FieldConfigHelper.class), limit));
+        assertThrows(IllegalArgumentException.class, () -> new CachedLruFieldConfigHelper(mock(FieldConfigHelper.class), limit));
     }
 
     @SuppressWarnings("ClassEscapesDefinedScope")
     @ParameterizedTest
-    @EnumSource(CachedFieldConfigHelper.AttributeType.class)
-    public void testAttributeTypesDoNotThrow(CachedFieldConfigHelper.AttributeType attributeType) {
+    @EnumSource(CachedLruFieldConfigHelper.AttributeType.class)
+    public void testAttributeTypesDoNotThrow(CachedLruFieldConfigHelper.AttributeType attributeType) {
         String fieldName = "test";
         FieldConfigHelper mockHelper = mock(FieldConfigHelper.class);
-        CachedFieldConfigHelper cachedHelper = new CachedFieldConfigHelper(mockHelper, 1);
+        CachedLruFieldConfigHelper cachedHelper = new CachedLruFieldConfigHelper(mockHelper, 1);
         cachedHelper.getFieldResult(attributeType, fieldName, (f) -> true);
     }
 
@@ -62,7 +62,7 @@ public class CachingFieldConfigHelperTest {
         AtomicLong storedCounter = new AtomicLong();
         AtomicLong indexCounter = new AtomicLong();
         FieldConfigHelper innerHelper = mock(FieldConfigHelper.class);
-        CachedFieldConfigHelper helper = new CachedFieldConfigHelper(innerHelper, 2);
+        CachedLruFieldConfigHelper helper = new CachedLruFieldConfigHelper(innerHelper, 2);
 
         when(innerHelper.isStoredField(any())).then((a) -> {
             storedCounter.incrementAndGet();
@@ -80,30 +80,30 @@ public class CachingFieldConfigHelperTest {
         // 3. limit blocks results to return if exceeded
         // 4. limit functions across attribute-types
 
-        helper.getFieldResult(CachedFieldConfigHelper.AttributeType.STORED_FIELD, "field1", innerHelper::isStoredField);
+        helper.getFieldResult(CachedLruFieldConfigHelper.AttributeType.STORED_FIELD, "field1", innerHelper::isStoredField);
         assertEquals(1, storedCounter.get(), "field1 should compute result (new field)");
 
-        helper.getFieldResult(CachedFieldConfigHelper.AttributeType.STORED_FIELD, "field1", innerHelper::isStoredField);
+        helper.getFieldResult(CachedLruFieldConfigHelper.AttributeType.STORED_FIELD, "field1", innerHelper::isStoredField);
         assertEquals(1, storedCounter.get(), "field1 repeated (existing field)");
 
-        helper.getFieldResult(CachedFieldConfigHelper.AttributeType.STORED_FIELD, "field2", innerHelper::isStoredField);
+        helper.getFieldResult(CachedLruFieldConfigHelper.AttributeType.STORED_FIELD, "field2", innerHelper::isStoredField);
         assertEquals(2, storedCounter.get(), "field2 should compute result (new field)");
 
-        helper.getFieldResult(CachedFieldConfigHelper.AttributeType.STORED_FIELD, "field2", innerHelper::isStoredField);
+        helper.getFieldResult(CachedLruFieldConfigHelper.AttributeType.STORED_FIELD, "field2", innerHelper::isStoredField);
         assertEquals(2, storedCounter.get(), "field2 repeated (existing)");
 
-        helper.getFieldResult(CachedFieldConfigHelper.AttributeType.INDEXED_FIELD, "field1", innerHelper::isIndexedField);
+        helper.getFieldResult(CachedLruFieldConfigHelper.AttributeType.INDEXED_FIELD, "field1", innerHelper::isIndexedField);
         assertEquals(1, indexCounter.get(), "field1 should compute result (new attribute)");
 
-        helper.getFieldResult(CachedFieldConfigHelper.AttributeType.STORED_FIELD, "field3", innerHelper::isStoredField);
+        helper.getFieldResult(CachedLruFieldConfigHelper.AttributeType.STORED_FIELD, "field3", innerHelper::isStoredField);
         assertEquals(3, storedCounter.get(), "field3 exceeded limit (new field)");
 
-        helper.getFieldResult(CachedFieldConfigHelper.AttributeType.STORED_FIELD, "field3", innerHelper::isStoredField);
+        helper.getFieldResult(CachedLruFieldConfigHelper.AttributeType.STORED_FIELD, "field3", innerHelper::isStoredField);
         assertEquals(3, storedCounter.get(), "field3 exceeded limit (existing field)");
 
         // LRU map should evict field #2
         // we access field #1 above which has more accesses over field #2
-        helper.getFieldResult(CachedFieldConfigHelper.AttributeType.STORED_FIELD, "field2", innerHelper::isStoredField);
+        helper.getFieldResult(CachedLruFieldConfigHelper.AttributeType.STORED_FIELD, "field2", innerHelper::isStoredField);
         assertEquals(4, storedCounter.get(), "field1 exceeded limit (new field/eviction)");
     }
 }

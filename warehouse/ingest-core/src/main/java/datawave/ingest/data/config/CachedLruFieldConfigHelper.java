@@ -7,7 +7,7 @@ import org.apache.commons.collections4.map.LRUMap;
 
 import com.google.common.annotations.VisibleForTesting;
 
-public class CachedFieldConfigHelper implements FieldConfigHelper {
+public class CachedLruFieldConfigHelper implements FieldConfigHelper {
     private final FieldConfigHelper underlyingHelper;
     private final Map<String,CachedEntry> resultCache;
 
@@ -15,7 +15,7 @@ public class CachedFieldConfigHelper implements FieldConfigHelper {
         INDEXED_FIELD, REVERSE_INDEXED_FIELD, TOKENIZED_FIELD, REVERSE_TOKENIZED_FIELD, STORED_FIELD, INDEX_ONLY_FIELD
     }
 
-    public CachedFieldConfigHelper(FieldConfigHelper helper, int limit) {
+    public CachedLruFieldConfigHelper(FieldConfigHelper helper, int limit) {
         if (limit < 1) {
             throw new IllegalArgumentException("Limit must be a positive integer");
         }

@@ -33,7 +33,7 @@ import datawave.ingest.config.IngestConfiguration;
 import datawave.ingest.config.IngestConfigurationFactory;
 import datawave.ingest.data.Type;
 import datawave.ingest.data.TypeRegistry;
-import datawave.ingest.data.config.CachedFieldConfigHelper;
+import datawave.ingest.data.config.CachedLruFieldConfigHelper;
 import datawave.ingest.data.config.DataTypeHelperImpl;
 import datawave.ingest.data.config.FieldConfigHelper;
 import datawave.ingest.data.config.MarkingsHelper;
@@ -270,7 +270,7 @@ public abstract class BaseIngestHelper extends AbstractIngestHelper implements C
                 }
             }
             final FieldConfigHelper baseHelper = XMLFieldConfigHelper.load(fieldConfigFile, this);
-            fieldConfigHelper = fieldConfigCacheEnabled ? new CachedFieldConfigHelper(baseHelper, fieldConfigCacheLimit) : baseHelper;
+            fieldConfigHelper = fieldConfigCacheEnabled ? new CachedLruFieldConfigHelper(baseHelper, fieldConfigCacheLimit) : baseHelper;
         }
 
         // Process the indexed fields
